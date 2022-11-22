@@ -1,8 +1,9 @@
 
+#include <Wire.h>   
 #include <XInput.h>
 #include <LiquidCrystal.h>
 #include "HX711.h"
-#include <Wire.h>                 
+              
 #include "SparkFun_MMA8452Q.h"
 
 MMA8452Q accel;                   // create instance of the MMA8452 class
@@ -37,11 +38,12 @@ const int32_t ADC_Max_loadCell = 2147483647;
 int32_t leftJoyX;
 int32_t leftJoyX_right;
 int32_t leftJoyX_left;
+int32_t freinage;
 int leftJoyX_M;
 int time_last;
                                  
 //  Pins allocation
-const int Pin_ButtonA = 4;
+const int Pin_ButtonA = 6;
 /*--------------- LCD------------------------*/
 const int rs = 9, en = 8, d4 = 7, d5 = 6, d6 = 5, d7 = 3;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
@@ -50,7 +52,7 @@ void setup() {
   // set up the LCD's number of columns and rows:
   Wire.begin();
   if (accel.begin() == false) {
-    Serial.println("Not Connected. Please check connections and read the hookup guide.");
+    //Serial.println("Not Connected. Please check connections and read the hookup guide.");
     while (1);
   }
   time_last = millis();
@@ -92,7 +94,7 @@ void loop() {
     angle_y /= 3.141592;
     
     map_angle = map(angle_x,-90,90,-255,255);
-    if(az>15){
+    if(az>19.5){
       button_flag = true;
     }
     else{
@@ -100,7 +102,7 @@ void loop() {
     }
   }
   
-  if (scale_right.is_ready() and scale_right.is_ready() and ((time_last+100)<current)) {
+  if (scale_right.is_ready() and scale_left.is_ready() and ((time_last+100)<current)) {
     leftJoyX_right = scale_right.read();
     leftJoyX_left = scale_left.read();
   
@@ -112,24 +114,24 @@ void loop() {
     
     //if(leftJoyX_right > 0 and leftJoyX_left > 0){
     if(leftJoyX_right > 0 and leftJoyX_left > 100000){
-      //leftJoyX = leftJoyX_right - leftJoyX_left;
-      //leftJoyX_M =  map(leftJoyX,-1000000,1000000,-255,255);
-      //leftJoyX_M = leftJoyX/2147483647;
-      //leftJoyX = (leftJoyX/700000)*1023;
-      //leftJoyX_M = leftJoyX;
-      lcd.setCursor(0, 1);
-      //Print a message to the LCD.
-      lcd.print("freinage");
-      //char leftJoyXMap = (leftJoyX)/2000;
-      //long leftJoyY = analogRead(Pin_LeftJoyY);  
+      if(leftJoyX_right>1000000){
+        leftJoyX_right = 1000000;
+      }
+      if(leftJoyX_left>1000000){
+        leftJoyX_left = 1000000;
+      }
+      //lcd.setCursor(0, 1);
+      //lcd.print("freinage");
+      freinage = map(leftJoyX_left,100000,1000000,0,255);
     }
   
     else if(leftJoyX_right > 0 and leftJoyX_left < 100000){
-      if(leftJoyX_right>3000000){
-        leftJoyX_right = 3000000;
+      freinage = 0;
+      if(leftJoyX_right>1000000){
+        leftJoyX_right = 1000000;
       }
       leftJoyX = leftJoyX_right;
-      leftJoyX_M =  map(leftJoyX,0,3000000,0,255);
+      leftJoyX_M =  map(leftJoyX,0,1000000,0,255);
       lcd.setCursor(0, 1);
       //Print a message to the LCD.
       lcd.print(leftJoyX_M);
@@ -137,21 +139,22 @@ void loop() {
       lcd.print("right");
     }
   else if(leftJoyX_right < 0 and leftJoyX_left > 100000){
+    freinage = 0;
     if(leftJoyX_left>1000000){
       leftJoyX_left = 1000000;
     }
     leftJoyX = leftJoyX_left;
     leftJoyX_M = map(leftJoyX,100000,1000000,0,-255);
-    lcd.setCursor(0, 1);
+    /*lcd.setCursor(0, 1);
     //Print a message to the LCD.
     lcd.print(leftJoyX_M);
     lcd.setCursor(8, 1);
-    lcd.print("left");
+    lcd.print("left");*/
   }
   else{
     leftJoyX_M = 0;
-    lcd.setCursor(0, 1);
-    lcd.print(leftJoyX_M);
+    /*lcd.setCursor(0, 1);
+    lcd.print(leftJoyX_M);*/
   }    
   time_last = millis();
   }
@@ -167,25 +170,25 @@ void loop() {
   }
   else {
     // Read trigger potentiometer values
-    int triggerLeft;
-    int triggerRight;
     // Set the trigger values as analog
-    XInput.setTrigger(TRIGGER_LEFT, triggerLeft);
-    XInput.setTrigger(TRIGGER_RIGHT, triggerRight);
+    XInput.setTrigger(TRIGGER_RIGHT, freinage);
   }
   
   // Set left joystick 
   if (UseLeftJoystick == true) {    
     boolean invert = !InvertLeftYAxis;
     XInput.setJoystickX(JOY_LEFT, leftJoyX_M);
-    XInput.setJoystickY(JOY_LEFT, map_angle,invert);
+    if(button_flag){
+      map_angle = 0;
+    }
+    XInput.setJoystickY(JOY_LEFT, map_angle);
   }
   // Read pin values and store in variables
   // (Note the "!" to invert the state, because LOW = pressed)
   boolean buttonA = !digitalRead(Pin_ButtonA);
   // Set XInput buttons
   XInput.setButton(BUTTON_A, buttonA);
-  XInput.setButton(BUTTON_Y, !button_flag);  
+  XInput.setButton(BUTTON_Y, button_flag);  
   // Send control data to the computer
   XInput.send();
 }
