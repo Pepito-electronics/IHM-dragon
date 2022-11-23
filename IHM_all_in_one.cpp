@@ -1,7 +1,7 @@
 
 #include <Wire.h>   
 #include <XInput.h>
-#include <LiquidCrystal.h>
+//#include <LiquidCrystal.h>
 #include "HX711.h"
               
 #include "SparkFun_MMA8452Q.h"
@@ -46,7 +46,7 @@ int time_last;
 const int Pin_ButtonA = 6;
 /*--------------- LCD------------------------*/
 const int rs = 9, en = 8, d4 = 7, d5 = 6, d6 = 5, d7 = 3;
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+//LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 void setup() {
   // set up the LCD's number of columns and rows:
@@ -56,10 +56,10 @@ void setup() {
     while (1);
   }
   time_last = millis();
-  lcd.begin(16, 2);
+  /*lcd.begin(16, 2);
   lcd.setCursor(0, 1);
   // Print a message to the LCD.
-  lcd.print("IHM dragon !");
+  lcd.print("IHM dragon !");*/
   
   scale_right.begin(LOADCELL_DOUT_PIN_R, LOADCELL_SCK_PIN_R);
   scale_left.begin(LOADCELL_DOUT_PIN_L, LOADCELL_SCK_PIN_L);
@@ -105,14 +105,7 @@ void loop() {
   if (scale_right.is_ready() and scale_left.is_ready() and ((time_last+100)<current)) {
     leftJoyX_right = scale_right.read();
     leftJoyX_left = scale_left.read();
-  
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print(leftJoyX_right);
-    lcd.setCursor(9, 0);
-    lcd.print(leftJoyX_left);
     
-    //if(leftJoyX_right > 0 and leftJoyX_left > 0){
     if(leftJoyX_right > 0 and leftJoyX_left > 100000){
       if(leftJoyX_right>1000000){
         leftJoyX_right = 1000000;
@@ -132,11 +125,6 @@ void loop() {
       }
       leftJoyX = leftJoyX_right;
       leftJoyX_M =  map(leftJoyX,0,1000000,0,255);
-      lcd.setCursor(0, 1);
-      //Print a message to the LCD.
-      lcd.print(leftJoyX_M);
-      lcd.setCursor(8, 1);
-      lcd.print("right");
     }
   else if(leftJoyX_right < 0 and leftJoyX_left > 100000){
     freinage = 0;
@@ -145,11 +133,6 @@ void loop() {
     }
     leftJoyX = leftJoyX_left;
     leftJoyX_M = map(leftJoyX,100000,1000000,0,-255);
-    /*lcd.setCursor(0, 1);
-    //Print a message to the LCD.
-    lcd.print(leftJoyX_M);
-    lcd.setCursor(8, 1);
-    lcd.print("left");*/
   }
   else{
     leftJoyX_M = 0;
